@@ -1,25 +1,187 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { concat, isEmpty, uniq } from "lodash";
+import { useEffect, useState } from "react";
+import { Alert, Badge, Card, Col, Container, Row } from "react-bootstrap";
+import "./App.css";
+import {
+  ErrorResponse,
+  MessageRequest,
+  MessageResponse,
+  Tile,
+  TileResponse,
+  Tiles,
+  WordResponse,
+} from "./types";
 
 function App() {
+  const [tabId, setTabId] = useState<number>();
+  const [tiles, setTiles] = useState<Tiles>();
+  const [include, setInclude] = useState<string>();
+  const [exclude, setExclude] = useState<string>();
+  const [match, setMatch] = useState<string>();
+  const [notMatch, setNotMatch] = useState<string>();
+  const [words, setWords] = useState<string[]>([]);
+  const [error, setError] = useState<string>();
+
+  const getTiles = (tabId: number) => {
+    console.log("getTiles:", tabId);
+
+    chrome.tabs &&
+      chrome.tabs
+        .sendMessage<MessageRequest, MessageResponse>(tabId, {
+          type: "GET_TILES",
+        })
+        .then((response) => {
+          console.log("GET_TILES response:", response);
+
+          const { error } = (response as ErrorResponse) ?? {};
+          const { tiles } = (response as TileResponse) ?? {};
+
+          setError(error);
+          setTiles(tiles);
+        })
+        .catch((err: Error) => {
+          console.error(err);
+          setError(err.message);
+        });
+  };
+
+  const getWords = (letters?: string) => {
+    console.log("getWords:", letters);
+
+    chrome.runtime &&
+      chrome.runtime
+        .sendMessage<MessageRequest, MessageResponse>({
+          type: "GET_WORDS",
+          letters: letters ?? "",
+        })
+        .then((response) => {
+          console.log("GET_WORDS response:", response);
+
+          const { error } = (response as ErrorResponse) ?? {};
+          const { words } = (response as WordResponse) ?? {};
+
+          setError(error);
+          setWords(words);
+        })
+        .catch((err: Error) => {
+          console.error(err);
+          setError(err.message);
+        });
+  };
+
+  useEffect(() => {
+    chrome.tabs &&
+      chrome.tabs
+        .query({ active: true, currentWindow: true })
+        .then((tabs) => {
+          const tab = tabs.pop();
+          tab && setTabId(tab.id);
+        })
+        .catch((err: Error) => {
+          console.error(err);
+          setError(err.message);
+        });
+  }, []);
+
+  useEffect(() => {
+    console.log("tabId:", tabId);
+    tabId && getTiles(tabId);
+  }, [tabId]);
+
+  const getLetters = (tiles?: (Tile | undefined)[]): string[] => {
+    return uniq(tiles && tiles.map((tile) => tile?.letter ?? "")) ?? [];
+  };
+
+  const getPattern = (tiles?: (Tile | undefined)[]): string[] => {
+    return Array.from(Array(5).keys()).map((p) => {
+      return (tiles ?? []).find((tile) => tile?.position === p)?.letter ?? ".";
+    });
+  };
+
+  const notPattern = (letters: string) => RegExp(`^[^${letters}]{5}$`, "gim");
+  const pattern = (letters: string) => RegExp(`^${letters}$`, "gim");
+
+  useEffect(() => {
+    const { correct, present, absent } = tiles ?? {};
+
+    const letters = getLetters(concat(correct, present)).join("");
+
+    setInclude(letters);
+
+    setExclude(
+      getLetters(absent)
+        .filter((c) => !letters.includes(c))
+        .join("")
+    );
+
+    setMatch(
+      getPattern(correct)
+        .map((l) => (l === "." ? "." : `[${l}]`))
+        .join("")
+    );
+
+    setNotMatch(
+      getPattern(present)
+        .map((l) => (l === "." ? "." : `[^${l}]`))
+        .join("")
+    );
+  }, [tiles]);
+
+  useEffect(() => {
+    include && getWords(include);
+  }, [include]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Container fluid className="m-0 p-2">
+      {error && <Alert variant="danger">{JSON.stringify(error)}</Alert>}
+      <Card bg="dark" text="light" className="mb-auto">
+        <Card.Header>
+          <h2>Wordle Helper</h2>
+        </Card.Header>
+        <Card.Body>
+          <Container fluid>
+            {[
+              { k: "Include", v: include },
+              { k: "Exclude", v: exclude },
+              { k: "Match", v: match },
+              { k: "!Match", v: notMatch },
+            ].map(({ k, v }) => (
+              <Row key={k}>
+                <Col xs>{k}</Col>
+                <Col xs="auto" className="text-nowrap">
+                  <code>{v}</code>
+                </Col>
+              </Row>
+            ))}
+            <Row>
+              <Col xs>
+                {words
+                  .filter(
+                    (word) =>
+                      isEmpty(exclude) ||
+                      (exclude && word.match(notPattern(exclude)))
+                  )
+                  .filter(
+                    (word) =>
+                      isEmpty(match) || (match && word.match(pattern(match)))
+                  )
+                  .filter(
+                    (word) =>
+                      isEmpty(notMatch) ||
+                      (notMatch && word.match(pattern(notMatch)))
+                  )
+                  .map((word) => (
+                    <Badge pill className="m-1">
+                      {word}
+                    </Badge>
+                  ))}
+              </Col>
+            </Row>
+          </Container>
+        </Card.Body>
+        <Card.Footer></Card.Footer>
+      </Card>
+    </Container>
   );
 }
 
