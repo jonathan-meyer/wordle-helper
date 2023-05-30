@@ -104,7 +104,9 @@ function App() {
   useEffect(() => {
     const { correct, present, absent } = tiles ?? {};
 
-    const letters = getLetters(concat(correct, present)).join("");
+    const letters = getLetters(concat(correct, present))
+      .sort((a, b) => a.localeCompare(b))
+      .join("");
 
     setInclude(letters);
 
@@ -153,8 +155,11 @@ function App() {
                 </Col>
               </Row>
             ))}
-            <Row>
+            <Row className="mt-2">
               <Col xs>
+                {isEmpty(words) && !isEmpty(include) && (
+                  <Alert variant="dark">Fetching Suggestions...</Alert>
+                )}
                 {words
                   .filter(
                     (word) =>

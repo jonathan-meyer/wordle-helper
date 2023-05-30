@@ -42,7 +42,7 @@ chrome.runtime.onMessage.addListener(
       case "GET_WORDS":
         getWords(request.letters)
           .then((words) => {
-            console.log(words);
+            console.log("word count:", words.length);
             sendResponse({ words: words });
           })
           .catch((err: Error) => {
@@ -56,24 +56,41 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
-const getWords = async (letters: string) =>
-  fetch("https://www.anagrammer.com/scrabble/", {
-    method: "POST",
-    body: toFormData({
-      letters: letters.padEnd(5, "?"),
-      sort: "length",
-      "wordLengths[5]": "on",
-      resultLimit: 1000000,
-    }),
-  })
-    .then((res) => res.text())
-    .then((text) => parse(text))
-    .then((html) =>
-      html
-        .querySelectorAll(".r a")
-        .map((word) => word.text)
-        .sort((a, b) => a.localeCompare(b))
-    );
+const getWords = async (letters: string) => {
+  const key = `words-${letters}`;
+
+  console.log("key:", key);
+
+  let words: string[] = await chrome.storage.local
+    .get([key])
+    .then((result) => result[key]);
+
+  if (!words) {
+    console.log("Fetching Words");
+
+    words = await fetch("https://www.anagrammer.com/scrabble/", {
+      method: "POST",
+      body: toFormData({
+        letters: letters.padEnd(5, "?"),
+        sort: "length",
+        "wordLengths[5]": "on",
+        resultLimit: 1000000,
+      }),
+    })
+      .then((res) => res.text())
+      .then((text) => parse(text))
+      .then((html) =>
+        html
+          .querySelectorAll(".r a")
+          .map((word) => word.text)
+          .sort((a, b) => a.localeCompare(b))
+      );
+
+    await chrome.storage.local.set({ [key]: words });
+  }
+
+  return words;
+};
 
 const toFormData = (data: Record<string, string | number>): FormData => {
   const formData = new FormData();
