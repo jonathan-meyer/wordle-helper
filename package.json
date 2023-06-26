@@ -14,7 +14,6 @@
     "@types/lodash": "^4.14.195",
     "@types/node": "^16.18.31",
     "@types/react": "^18.2.6",
-    "@types/react-dev-utils": "^9.0.11",
     "@types/react-dom": "^18.2.4",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
     "axios": "^1.4.0",
@@ -23,16 +22,16 @@
     "node-html-parser": "^6.1.5",
     "react": "^18.2.0",
     "react-bootstrap": "^2.7.4",
-    "react-dev-utils": "^12.0.1",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
+    "util": "^0.12.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "craco start",
+    "start": "react-scripts start",
     "build": "INLINE_RUNTIME_CHUNK=false craco build",
-    "test": "craco test",
+    "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

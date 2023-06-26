@@ -88,14 +88,23 @@ function App() {
     tabId && getTiles(tabId);
   }, [tabId]);
 
-  const getLetters = (tiles?: (Tile | undefined)[]): string[] => {
-    return uniq(tiles && tiles.map((tile) => tile?.letter ?? "")) ?? [];
+  const getUniqLetters = (tiles?: Tile[]): string[] => {
+    return uniq(tiles && tiles.map((tile) => tile.letter)) ?? [];
   };
 
-  const getPattern = (tiles?: (Tile | undefined)[]): string[] => {
-    return Array.from(Array(5).keys()).map((p) => {
-      return (tiles ?? []).find((tile) => tile?.position === p)?.letter ?? ".";
-    });
+  const getLetters = (tiles?: Tile[]): string[] => {
+    const letters: string[] = [];
+
+    for (let x: number = 0; x < 5; x++) {
+      const letter = (tiles ?? [])
+        .filter((tile) => tile?.position === x)
+        .map((tile) => tile.letter)
+        .join("");
+
+      letters[x] = isEmpty(letter) ? "." : letter;
+    }
+
+    return letters;
   };
 
   const notPattern = (letters: string) => RegExp(`^[^${letters}]{5}$`, "gim");
@@ -104,26 +113,26 @@ function App() {
   useEffect(() => {
     const { correct, present, absent } = tiles ?? {};
 
-    const letters = getLetters(concat(correct, present))
+    const letters = getUniqLetters(concat(correct ?? [], present ?? []))
       .sort((a, b) => a.localeCompare(b))
       .join("");
 
     setInclude(letters);
 
     setExclude(
-      getLetters(absent)
+      getUniqLetters(absent)
         .filter((c) => !letters.includes(c))
         .join("")
     );
 
     setMatch(
-      getPattern(correct)
+      getLetters(correct)
         .map((l) => (l === "." ? "." : `[${l}]`))
         .join("")
     );
 
     setNotMatch(
-      getPattern(present)
+      getLetters(present)
         .map((l) => (l === "." ? "." : `[^${l}]`))
         .join("")
     );
