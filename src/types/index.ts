@@ -28,6 +28,11 @@ export type TileRequest = {
   type: "GET_TILES";
 };
 
+export type SelectGuess = {
+  type: "SELECT_GUESS";
+  guess: string;
+};
+
 export type TileResponse = {
   tiles: Tiles;
 };
@@ -40,5 +45,13 @@ export type ErrorResponse = {
   error: string;
 };
 
-export type MessageRequest = WordRequest | TileRequest;
-export type MessageResponse = WordResponse | TileResponse | ErrorResponse;
+export type GuessResponse = {
+  letters: string[];
+};
+
+export type MessageRequest = WordRequest | TileRequest | SelectGuess;
+export type MessageResponse =
+  | WordResponse
+  | TileResponse
+  | ErrorResponse
+  | GuessResponse;

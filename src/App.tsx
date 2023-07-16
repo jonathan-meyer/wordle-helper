@@ -1,7 +1,8 @@
 import { concat, isEmpty, uniq } from "lodash";
-import { useEffect, useState } from "react";
-import { Alert, Badge, Card, Col, Container, Row } from "react-bootstrap";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Card, Col, Container, Row } from "react-bootstrap";
 import "./App.css";
+import Guess from "./Guess";
 import {
   ErrorResponse,
   MessageRequest,
@@ -22,52 +23,80 @@ function App() {
   const [words, setWords] = useState<string[]>([]);
   const [error, setError] = useState<string>();
 
-  const getTiles = (tabId: number) => {
-    console.log("getTiles:", tabId);
+  const getTiles = useMemo(
+    () => (tabId: number) => {
+      console.log("getTiles:", tabId);
 
-    chrome.tabs &&
-      chrome.tabs
-        .sendMessage<MessageRequest, MessageResponse>(tabId, {
-          type: "GET_TILES",
-        })
-        .then((response) => {
-          console.log("GET_TILES response:", response);
+      chrome.tabs &&
+        chrome.tabs
+          .sendMessage<MessageRequest, MessageResponse>(tabId, {
+            type: "GET_TILES",
+          })
+          .then((response) => {
+            console.log("GET_TILES response:", response);
 
-          const { error } = (response as ErrorResponse) ?? {};
-          const { tiles } = (response as TileResponse) ?? {};
+            const { error } = (response as ErrorResponse) ?? {};
+            const { tiles } = (response as TileResponse) ?? {};
 
-          setError(error);
-          setTiles(tiles);
-        })
-        .catch((err: Error) => {
-          console.error(err);
-          setError(err.message);
-        });
-  };
+            setError(error);
+            setTiles(tiles);
+          })
+          .catch((err: Error) => {
+            console.error(err);
+            setError(err.message);
+          });
+    },
+    []
+  );
 
-  const getWords = (letters?: string) => {
-    console.log("getWords:", letters);
+  const getWords = useMemo(
+    () => (letters?: string) => {
+      console.log("getWords:", letters);
 
-    chrome.runtime &&
-      chrome.runtime
-        .sendMessage<MessageRequest, MessageResponse>({
-          type: "GET_WORDS",
-          letters: letters ?? "",
-        })
-        .then((response) => {
-          console.log("GET_WORDS response:", response);
+      chrome.runtime &&
+        chrome.runtime
+          .sendMessage<MessageRequest, MessageResponse>({
+            type: "GET_WORDS",
+            letters: letters ?? "",
+          })
+          .then((response) => {
+            console.log("GET_WORDS response:", response);
 
-          const { error } = (response as ErrorResponse) ?? {};
-          const { words } = (response as WordResponse) ?? {};
+            const { error } = (response as ErrorResponse) ?? {};
+            const { words } = (response as WordResponse) ?? {};
 
-          setError(error);
-          setWords(words);
-        })
-        .catch((err: Error) => {
-          console.error(err);
-          setError(err.message);
-        });
-  };
+            setError(error);
+            setWords(words);
+          })
+          .catch((err: Error) => {
+            console.error(err);
+            setError(err.message);
+          });
+    },
+    []
+  );
+
+  const selectGuess = useMemo(
+    () => (tabId: number, guess: string) => {
+      console.log("selectGuess", guess, "for tab", tabId);
+
+      chrome.tabs &&
+        chrome.tabs
+          .sendMessage<MessageRequest, MessageResponse>(tabId, {
+            type: "SELECT_GUESS",
+            guess,
+          })
+          .then((response) => {
+            console.log("SELECT_GUESS response:", response);
+            window.close();
+          })
+          .catch((err: Error) => {
+            console.error(err);
+            setError(err.message);
+          });
+    },
+    []
+  );
 
   useEffect(() => {
     chrome.tabs &&
@@ -86,26 +115,34 @@ function App() {
   useEffect(() => {
     console.log("tabId:", tabId);
     tabId && getTiles(tabId);
-  }, [tabId]);
+  }, [getTiles, tabId]);
 
-  const getUniqLetters = (tiles?: Tile[]): string[] => {
-    return uniq(tiles && tiles.map((tile) => tile.letter)) ?? [];
-  };
+  const getUniqLetters = useMemo(
+    () =>
+      (tiles?: Tile[]): string[] => {
+        return uniq(tiles && tiles.map((tile) => tile.letter)) ?? [];
+      },
+    []
+  );
 
-  const getLetters = (tiles?: Tile[]): string[] => {
-    const letters: string[] = [];
+  const getLetters = useMemo(
+    () =>
+      (tiles?: Tile[]): string[] => {
+        const letters: string[] = [];
 
-    for (let x: number = 0; x < 5; x++) {
-      const letter = (tiles ?? [])
-        .filter((tile) => tile?.position === x)
-        .map((tile) => tile.letter)
-        .join("");
+        for (let x: number = 0; x < 5; x++) {
+          const letter = (tiles ?? [])
+            .filter((tile) => tile?.position === x)
+            .map((tile) => tile.letter)
+            .join("");
 
-      letters[x] = isEmpty(letter) ? "." : letter;
-    }
+          letters[x] = isEmpty(letter) ? "." : letter;
+        }
 
-    return letters;
-  };
+        return letters;
+      },
+    []
+  );
 
   const notPattern = (letters: string) => RegExp(`^[^${letters}]{5}$`, "gim");
   const pattern = (letters: string) => RegExp(`^${letters}$`, "gim");
@@ -136,11 +173,11 @@ function App() {
         .map((l) => (l === "." ? "." : `[^${l}]`))
         .join("")
     );
-  }, [tiles]);
+  }, [getLetters, getUniqLetters, tiles]);
 
   useEffect(() => {
     include && getWords(include);
-  }, [include]);
+  }, [getWords, include]);
 
   return (
     <Container fluid className="m-0 p-2">
@@ -156,6 +193,7 @@ function App() {
               { k: "Exclude", v: exclude },
               { k: "Match", v: match },
               { k: "!Match", v: notMatch },
+              { k: "Count", v: words.length },
             ].map(({ k, v }) => (
               <Row key={k}>
                 <Col xs>{k}</Col>
@@ -185,9 +223,11 @@ function App() {
                       (notMatch && word.match(pattern(notMatch)))
                   )
                   .map((word) => (
-                    <Badge pill className="m-1">
-                      {word}
-                    </Badge>
+                    <Guess
+                      word={word}
+                      onClick={() => tabId && selectGuess(tabId, word)}
+                      className="m-1"
+                    />
                   ))}
               </Col>
             </Row>

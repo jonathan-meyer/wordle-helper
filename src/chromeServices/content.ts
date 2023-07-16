@@ -1,6 +1,6 @@
 import { MessageRequest, MessageResponse, Tiles } from "../types";
 
-console.log("contents.ts");
+console.log("src/chromeServices/content.ts");
 
 chrome.runtime.onMessage.addListener(
   (
@@ -28,6 +28,23 @@ chrome.runtime.onMessage.addListener(
 
         console.log("tiles:", data);
         sendResponse({ tiles: data });
+        break;
+
+      case "SELECT_GUESS":
+        const letters = [
+          ...Array(5).fill("Backspace", 0),
+          ...request.guess.split(""),
+        ];
+
+        sendResponse({
+          letters: letters.map((letter) =>
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: letter }))
+              ? "yes"
+              : "no"
+          ),
+        });
+
+        console.log("letters:", letters);
         break;
     }
   }
