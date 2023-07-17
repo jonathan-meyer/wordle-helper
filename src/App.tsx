@@ -22,6 +22,7 @@ function App() {
   const [notMatch, setNotMatch] = useState<string>();
   const [words, setWords] = useState<string[]>([]);
   const [error, setError] = useState<string>();
+  const [guesses, setGuesses] = useState<string[]>([]);
 
   const getTiles = useMemo(
     () => (tabId: number) => {
@@ -173,11 +174,26 @@ function App() {
         .map((l) => (l === "." ? "." : `[^${l}]`))
         .join("")
     );
-  }, [getLetters, getUniqLetters, tiles]);
+
+    getWords(letters);
+  }, [getLetters, getUniqLetters, getWords, tiles]);
 
   useEffect(() => {
-    include && getWords(include);
-  }, [getWords, include]);
+    setGuesses(
+      words
+        .filter(
+          (word) =>
+            isEmpty(exclude) || (exclude && word.match(notPattern(exclude)))
+        )
+        .filter(
+          (word) => isEmpty(match) || (match && word.match(pattern(match)))
+        )
+        .filter(
+          (word) =>
+            isEmpty(notMatch) || (notMatch && word.match(pattern(notMatch)))
+        )
+    );
+  }, [exclude, match, notMatch, words]);
 
   return (
     <Container fluid className="m-0 p-2">
@@ -193,7 +209,7 @@ function App() {
               { k: "Exclude", v: exclude },
               { k: "Match", v: match },
               { k: "!Match", v: notMatch },
-              { k: "Count", v: words.length },
+              { k: "Count", v: guesses.length },
             ].map(({ k, v }) => (
               <Row key={k}>
                 <Col xs>{k}</Col>
@@ -207,28 +223,13 @@ function App() {
                 {isEmpty(words) && !isEmpty(include) && (
                   <Alert variant="dark">Fetching Suggestions...</Alert>
                 )}
-                {words
-                  .filter(
-                    (word) =>
-                      isEmpty(exclude) ||
-                      (exclude && word.match(notPattern(exclude)))
-                  )
-                  .filter(
-                    (word) =>
-                      isEmpty(match) || (match && word.match(pattern(match)))
-                  )
-                  .filter(
-                    (word) =>
-                      isEmpty(notMatch) ||
-                      (notMatch && word.match(pattern(notMatch)))
-                  )
-                  .map((word) => (
-                    <Guess
-                      word={word}
-                      onClick={() => tabId && selectGuess(tabId, word)}
-                      className="m-1"
-                    />
-                  ))}
+                {guesses.map((word) => (
+                  <Guess
+                    word={word}
+                    onClick={() => tabId && selectGuess(tabId, word)}
+                    className="m-1"
+                  />
+                ))}
               </Col>
             </Row>
           </Container>
