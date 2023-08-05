@@ -1,7 +1,8 @@
+import { isEmpty } from "lodash";
 import parse from "node-html-parser";
 import { MessageRequest, MessageResponse } from "../types";
 
-console.log("src/chromeServices/service_worker.ts");
+console.log("Wordle Helper:", "src/chromeServices/service_worker.ts");
 
 chrome.runtime.onInstalled.addListener(({ reason }) => {
   console.log("onInstalled:", reason);
@@ -11,7 +12,7 @@ chrome.runtime.onInstalled.addListener(({ reason }) => {
 
   // Clear all rules to ensure only our expected rules are set
   chrome.declarativeContent.onPageChanged.removeRules(undefined, () => {
-    // Declare a rule to enable the action on example.com pages
+    // Declare a rule to enable the action on nytimes.com pages
     let isWordleRule = {
       conditions: [
         new chrome.declarativeContent.PageStateMatcher({
@@ -25,8 +26,7 @@ chrome.runtime.onInstalled.addListener(({ reason }) => {
     };
 
     // Finally, apply our new array of rules
-    let rules = [isWordleRule];
-    chrome.declarativeContent.onPageChanged.addRules(rules);
+    chrome.declarativeContent.onPageChanged.addRules([isWordleRule]);
   });
 });
 
@@ -65,28 +65,44 @@ const getWords = async (letters: string) => {
     .get([key])
     .then((result) => result[key]);
 
-  if (!words) {
-    console.log("Fetching Words");
+  if (isEmpty(words)) {
+    const body = {
+      letters: letters.padEnd(5, "?"),
+      sort: "length",
+      "wordLengths[5]": "on",
+      resultLimit: 1000000,
+    };
+
+    console.log("Fetching Words:", body);
 
     words = await fetch("https://www.anagrammer.com/scrabble/", {
       method: "POST",
-      body: toFormData({
-        letters: letters.padEnd(5, "?"),
-        sort: "length",
-        "wordLengths[5]": "on",
-        resultLimit: 1000000,
-      }),
+      body: toFormData(body),
     })
-      .then((res) => res.text())
-      .then((text) => parse(text))
-      .then((html) =>
-        html
+      .then((res) => {
+        console.log({ res });
+        return res.text();
+      })
+      .then((text) => {
+        console.log({ text });
+        return parse(text);
+      })
+      .then((html) => {
+        console.log({ html });
+        console.log("query:", html.querySelectorAll(".r a"));
+        return html
           .querySelectorAll(".r a")
           .map((word) => word.text)
-          .sort((a, b) => a.localeCompare(b))
-      );
+          .sort((a, b) => a.localeCompare(b));
+      })
+      .catch((err) => {
+        console.log(err);
+        return [];
+      });
 
-    await chrome.storage.local.set({ [key]: words });
+    await chrome.storage.local
+      .set({ [key]: words })
+      .catch((err) => console.log(err));
   }
 
   return words;

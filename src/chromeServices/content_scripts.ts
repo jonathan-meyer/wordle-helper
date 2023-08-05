@@ -1,6 +1,6 @@
 import { MessageRequest, MessageResponse, Tiles } from "../types";
 
-console.log("src/chromeServices/content.ts");
+console.log("Wordle Helper:", "src/chromeServices/content_scripts.ts");
 
 chrome.runtime.onMessage.addListener(
   (

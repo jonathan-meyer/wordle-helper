@@ -132,10 +132,11 @@ function App() {
         const letters: string[] = [];
 
         for (let x: number = 0; x < 5; x++) {
-          const letter = (tiles ?? [])
-            .filter((tile) => tile?.position === x)
-            .map((tile) => tile.letter)
-            .join("");
+          const letter = uniq(
+            (tiles ?? [])
+              .filter((tile) => tile?.position === x)
+              .map((tile) => tile.letter)
+          ).join("");
 
           letters[x] = isEmpty(letter) ? "." : letter;
         }

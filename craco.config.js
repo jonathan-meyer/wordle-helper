@@ -12,7 +12,7 @@ module.exports = {
               require.resolve("react-dev-utils/webpackHotDevClient"),
             paths.appIndexJs,
           ].filter(Boolean),
-          content: "./src/chromeServices/content.ts",
+          content_scripts: "./src/chromeServices/content_scripts.ts",
           service_worker: "./src/chromeServices/service_worker.ts",
         },
         output: {
@@ -23,11 +23,6 @@ module.exports = {
           ...webpackConfig.optimization,
           runtimeChunk: false,
         },
-        // resolve: {
-        //   fallback: {
-        //     url: false, // require.resolve("url/"),
-        //   },
-        // },
       };
     },
   },
