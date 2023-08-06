@@ -6,28 +6,6 @@ console.log("Wordle Helper:", "src/chromeServices/service_worker.ts");
 
 chrome.runtime.onInstalled.addListener(({ reason }) => {
   console.log("onInstalled:", reason);
-
-  // Page actions are disabled by default and enabled on select tabs
-  chrome.action.disable();
-
-  // Clear all rules to ensure only our expected rules are set
-  chrome.declarativeContent.onPageChanged.removeRules(undefined, () => {
-    // Declare a rule to enable the action on nytimes.com pages
-    let isWordleRule = {
-      conditions: [
-        new chrome.declarativeContent.PageStateMatcher({
-          pageUrl: {
-            hostSuffix: "nytimes.com",
-            pathPrefix: "/games/wordle",
-          },
-        }),
-      ],
-      actions: [new chrome.declarativeContent.ShowAction()],
-    };
-
-    // Finally, apply our new array of rules
-    chrome.declarativeContent.onPageChanged.addRules([isWordleRule]);
-  });
 });
 
 chrome.runtime.onMessage.addListener(
@@ -57,6 +35,10 @@ chrome.runtime.onMessage.addListener(
 );
 
 const getWords = async (letters: string) => {
+  if (isEmpty(letters)) {
+    return ["slate"];
+  }
+
   const key = `words-${letters}`;
 
   console.log("key:", key);

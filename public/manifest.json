@@ -13,11 +13,11 @@
     "48": "wordle-icon.png",
     "128": "wordle-icon.png"
   },
-  "permissions": ["activeTab", "scripting", "storage", "declarativeContent"],
-  "host_permissions": ["https://*.nytimes.com/*", "https://*.anagrammer.com/*"],
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["*://*.nytimes.com/*", "*://*.anagrammer.com/*"],
   "content_scripts": [
     {
-      "matches": ["https://*.nytimes.com/*"],
+      "matches": ["*://*.nytimes.com/games/wordle/*"],
       "js": ["./static/js/content_scripts.js"]
     }
   ],

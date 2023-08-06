@@ -1,17 +1,27 @@
+import "bootstrap/dist/css/bootstrap.css";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { HashRouter, Route, Routes } from "react-router-dom";
 import App from "./App";
-import reportWebVitals from "./reportWebVitals";
-
-import "bootstrap/dist/css/bootstrap.css";
+import Helper from "./Helper";
+import NotWordle from "./NotWordle";
 import "./index.css";
+import reportWebVitals from "./reportWebVitals";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
+
 root.render(
   <React.StrictMode>
-    <App />
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<App />}>
+          <Route path="helper/:tabId" element={<Helper />} />
+          <Route path="not_wordle" element={<NotWordle />} />
+        </Route>
+      </Routes>
+    </HashRouter>
   </React.StrictMode>
 );
 
