@@ -35,9 +35,9 @@ chrome.runtime.onMessage.addListener(
 );
 
 const getWords = async (letters: string) => {
-  if (isEmpty(letters)) {
-    return ["slate"];
-  }
+  // if (isEmpty(letters)) {
+  //   return ["slate"];
+  // }
 
   const key = `words-${letters}`;
 
@@ -62,11 +62,11 @@ const getWords = async (letters: string) => {
       body: toFormData(body),
     })
       .then((res) => {
-        console.log({ res });
+        console.log("res:", res);
         return res.text();
       })
       .then((text) => {
-        console.log({ text });
+        console.log("text:", text);
         return parse(text);
       })
       .then((html) => {

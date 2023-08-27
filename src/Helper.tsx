@@ -1,4 +1,4 @@
-import { concat, isEmpty, uniq } from "lodash";
+import { concat, entries, isEmpty, uniq } from "lodash";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Card, Col, Container, Row } from "react-bootstrap";
 import { useParams } from "react-router-dom";
@@ -25,6 +25,7 @@ function Helper() {
   const [words, setWords] = useState<string[]>([]);
   const [error, setError] = useState<string>();
   const [guesses, setGuesses] = useState<string[]>([]);
+  const [recommend, setRecommend] = useState<string[]>([]);
 
   const getTiles = useCallback((tabId: number) => {
     console.log("getTiles:", tabId);
@@ -163,8 +164,45 @@ function Helper() {
           (word) =>
             isEmpty(notMatch) || (notMatch && word.match(pattern(notMatch)))
         )
+        .sort()
     );
   }, [exclude, match, notMatch, words]);
+
+  type PositionCount = [number, number, number, number, number];
+  type LetterCount = Record<string, PositionCount>;
+
+  const countLettersInWord = useCallback(
+    (word: string): LetterCount =>
+      word.split("").reduce((p, c, i) => {
+        const pos: PositionCount = p[c] ?? [0, 0, 0, 0, 0];
+        pos[i] = pos[i] + 1;
+        return { ...p, [c]: pos };
+      }, {} as LetterCount),
+    []
+  );
+
+  useEffect(() => {
+    const letters: LetterCount = guesses.reduce((p, word) => {
+      entries(countLettersInWord(word)).forEach(([l, pos]) => {
+        const lc = p[l] ?? [0, 0, 0, 0, 0];
+        pos.forEach((pc, i) => (lc[i] += pc));
+        p[l] = lc;
+      });
+
+      return p;
+    }, {} as LetterCount);
+
+    const his = Object.entries(letters).sort(([k1, v1], [k2, v2]) =>
+      k1.localeCompare(k2)
+    );
+
+    console.log(
+      "his:",
+      his.map(([l, ns]) => `${l} ${JSON.stringify(ns)}`)
+    );
+
+    setRecommend([guesses[0]]);
+  }, [countLettersInWord, guesses]);
 
   return (
     <Container fluid className="m-0 p-2">
@@ -194,6 +232,15 @@ function Helper() {
                 {isEmpty(words) && !isEmpty(include) && (
                   <Alert variant="dark">Fetching Suggestions...</Alert>
                 )}
+                <hr />
+                {recommend.map((word) => (
+                  <Guess
+                    word={word}
+                    onClick={() => tabId && selectGuess(tabId, word)}
+                    className="m-1"
+                  />
+                ))}
+                <hr />
                 {guesses.map((word) => (
                   <Guess
                     word={word}
