@@ -2,6 +2,10 @@
 
 A simple extension to help with solving today's wordle.
 
+# Docs
+
+- https://github.com/jonathan-meyer/wordle-helper/wiki
+
 # Notes
 
 - https://blog.logrocket.com/creating-chrome-extension-react-typescript/

@@ -201,7 +201,7 @@ function Helper() {
       his.map(([l, ns]) => `${l} ${JSON.stringify(ns)}`)
     );
 
-    setRecommend([guesses[0]]);
+    // setRecommend([guesses[0]]);
   }, [countLettersInWord, guesses]);
 
   return (
@@ -232,13 +232,14 @@ function Helper() {
                 {isEmpty(words) && !isEmpty(include) && (
                   <Alert variant="dark">Fetching Suggestions...</Alert>
                 )}
-                <hr />
-                {recommend.map((word) => (
+
+                {recommend.map((word, i) => (<>
+                  {i === 0 && <hr />}
                   <Guess
                     word={word}
                     onClick={() => tabId && selectGuess(tabId, word)}
                     className="m-1"
-                  />
+                  /></>
                 ))}
                 <hr />
                 {guesses.map((word) => (
